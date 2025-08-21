@@ -1,0 +1,46 @@
+# Rust build artifacts
+/target/
+**/*.rs.bk
+*.pdb
+
+# Cargo
+Cargo.lock
+
+# IDE and editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Output directories
+/out/
+/out_*/
+/test_*/
+
+# Test coverage
+*.profraw
+*.profdata
+/coverage/
+
+# Documentation
+/doc/
+
+# Environment files
+.env
+.env.local
+
+# Backup files
+*.bak
+*.backup
+
+# Log files
+*.log
+
+# OS files
+Thumbs.db
+.Spotlight-V100
+.Trashes
+DS_Store
+.DS_Store

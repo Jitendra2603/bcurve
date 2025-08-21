@@ -1,0 +1,5 @@
+# Example whitelist file
+# These addresses will bypass the launch-phase surcharge
+0x1234567890abcdef1234567890abcdef12345678
+0xabcdef1234567890abcdef1234567890abcdef12
+0xdeadbeef1234567890deadbeef1234567890dead
