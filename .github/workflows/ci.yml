@@ -8,8 +8,11 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
-  RUST_BACKTRACE: 1
+  RUST_BACKTRACE: full
   PKG_CONFIG_PATH: /usr/lib/x86_64-linux-gnu/pkgconfig:/usr/share/pkgconfig:/usr/lib/pkgconfig
+  RUST_FONTCONFIG_DLOPEN: true
+  FONTCONFIG_NO_PKG_CONFIG: true
+  CARGO_PROFILE_DEV_BUILD_OVERRIDE_DEBUG: true
 
 jobs:
   check:
@@ -22,9 +25,14 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y pkg-config fontconfig libfontconfig1 libfontconfig1-dev libfreetype6-dev
           # Verify fontconfig installation
-          pkg-config --modversion fontconfig || true
-          pkg-config --cflags fontconfig || true
-          pkg-config --libs fontconfig || true
+          echo "=== Fontconfig package info ==="
+          dpkg -l | grep -i fontconfig || true
+          echo "=== Fontconfig files ==="
+          find /usr -name "fontconfig.pc" || true
+          echo "=== pkg-config info ==="
+          pkg-config --debug --libs --cflags fontconfig || true
+          echo "=== System libraries ==="
+          ldconfig -p | grep fontconfig || true
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - run: cargo check --all-features
@@ -39,9 +47,14 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y pkg-config fontconfig libfontconfig1 libfontconfig1-dev libfreetype6-dev
           # Verify fontconfig installation
-          pkg-config --modversion fontconfig || true
-          pkg-config --cflags fontconfig || true
-          pkg-config --libs fontconfig || true
+          echo "=== Fontconfig package info ==="
+          dpkg -l | grep -i fontconfig || true
+          echo "=== Fontconfig files ==="
+          find /usr -name "fontconfig.pc" || true
+          echo "=== pkg-config info ==="
+          pkg-config --debug --libs --cflags fontconfig || true
+          echo "=== System libraries ==="
+          ldconfig -p | grep fontconfig || true
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - run: cargo test --all-features
@@ -77,9 +90,14 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y pkg-config fontconfig libfontconfig1 libfontconfig1-dev libfreetype6-dev
           # Verify fontconfig installation
-          pkg-config --modversion fontconfig || true
-          pkg-config --cflags fontconfig || true
-          pkg-config --libs fontconfig || true
+          echo "=== Fontconfig package info ==="
+          dpkg -l | grep -i fontconfig || true
+          echo "=== Fontconfig files ==="
+          find /usr -name "fontconfig.pc" || true
+          echo "=== pkg-config info ==="
+          pkg-config --debug --libs --cflags fontconfig || true
+          echo "=== System libraries ==="
+          ldconfig -p | grep fontconfig || true
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - run: cargo install cargo-tarpaulin
@@ -115,9 +133,14 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y pkg-config fontconfig libfontconfig1 libfontconfig1-dev libfreetype6-dev
           # Verify fontconfig installation
-          pkg-config --modversion fontconfig || true
-          pkg-config --cflags fontconfig || true
-          pkg-config --libs fontconfig || true
+          echo "=== Fontconfig package info ==="
+          dpkg -l | grep -i fontconfig || true
+          echo "=== Fontconfig files ==="
+          find /usr -name "fontconfig.pc" || true
+          echo "=== pkg-config info ==="
+          pkg-config --debug --libs --cflags fontconfig || true
+          echo "=== System libraries ==="
+          ldconfig -p | grep fontconfig || true
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - run: cargo build --release
@@ -156,9 +179,14 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y pkg-config fontconfig libfontconfig1 libfontconfig1-dev libfreetype6-dev
           # Verify fontconfig installation
-          pkg-config --modversion fontconfig || true
-          pkg-config --cflags fontconfig || true
-          pkg-config --libs fontconfig || true
+          echo "=== Fontconfig package info ==="
+          dpkg -l | grep -i fontconfig || true
+          echo "=== Fontconfig files ==="
+          find /usr -name "fontconfig.pc" || true
+          echo "=== pkg-config info ==="
+          pkg-config --debug --libs --cflags fontconfig || true
+          echo "=== System libraries ==="
+          ldconfig -p | grep fontconfig || true
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - run: cargo doc --no-deps --all-features
@@ -174,9 +202,14 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y pkg-config fontconfig libfontconfig1 libfontconfig1-dev libfreetype6-dev
           # Verify fontconfig installation
-          pkg-config --modversion fontconfig || true
-          pkg-config --cflags fontconfig || true
-          pkg-config --libs fontconfig || true
+          echo "=== Fontconfig package info ==="
+          dpkg -l | grep -i fontconfig || true
+          echo "=== Fontconfig files ==="
+          find /usr -name "fontconfig.pc" || true
+          echo "=== pkg-config info ==="
+          pkg-config --debug --libs --cflags fontconfig || true
+          echo "=== System libraries ==="
+          ldconfig -p | grep fontconfig || true
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - run: cargo publish --dry-run
