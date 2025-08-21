@@ -8,10 +8,10 @@
 //! and visualization capabilities.
 //!
 //! # Modules
-//! - [`curves`]: Price lattice & allocation mechanisms
-//! - [`dlmm`]: Fee schedule and launch-phase surcharge
-//! - [`verifier`]: Analytic vs numeric checks
-//! - [`plot`]: Visualization (optional in binaries)
+//! - [`curves`][]: Price lattice & allocation mechanisms
+//! - [`dlmm`][]: Fee schedule and launch-phase surcharge
+//! - [`verifier`][]: Analytic vs numeric checks
+//! - [`plot`][]: Visualization (optional in binaries)
 
 /// Price lattice and allocation mechanisms for bonding curves
 pub mod curves;
