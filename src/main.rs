@@ -242,7 +242,7 @@ fn run_geometric(
         }
 
         // Example: check if an address is whitelisted
-        if surcharge.whitelist.len() > 0 {
+        if !surcharge.whitelist.is_empty() {
             let example_addr = surcharge.whitelist.iter().next().unwrap();
             println!(
                 "  Example: {} is whitelisted: {}",
@@ -320,12 +320,12 @@ fn write_schedule_csv_geometric(
         "#   Min price Y→X: {:.6}",
         DlmmFeeParams::min_price_sell_y_for_x(mid_price, impact_bps)
     )?;
-    writeln!(file, "")?;
+    writeln!(file)?;
 
     // Create CSV writer from the file
     let mut wtr = csv::Writer::from_writer(file);
     // explicit header
-    wtr.write_record(&[
+          wtr.write_record([
         "bin",
         "price",
         "delta_x",
@@ -510,7 +510,7 @@ fn write_schedule_csv_generic<C: Curve>(
         "# Launch surcharge: {:.1}% → {:.1}% over {} seconds",
         surcharge.tau_start_pct, surcharge.tau_end_pct, surcharge.ramp_secs
     )?;
-    if surcharge.whitelist.len() > 0 {
+    if !surcharge.whitelist.is_empty() {
         writeln!(
             file,
             "# Whitelisted addresses: {}",
@@ -523,12 +523,12 @@ fn write_schedule_csv_generic<C: Curve>(
             writeln!(file, "#   ... and {} more", surcharge.whitelist.len() - 3)?;
         }
     }
-    writeln!(file, "")?;
+    writeln!(file)?;
 
     // Create CSV writer from the file
     let mut wtr = csv::Writer::from_writer(file);
     // explicit header
-    wtr.write_record(&[
+          wtr.write_record([
         "bin",
         "price",
         "delta_x",
