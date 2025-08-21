@@ -325,7 +325,7 @@ fn write_schedule_csv_geometric(
     // Create CSV writer from the file
     let mut wtr = csv::Writer::from_writer(file);
     // explicit header
-          wtr.write_record([
+    wtr.write_record([
         "bin",
         "price",
         "delta_x",
@@ -528,7 +528,7 @@ fn write_schedule_csv_generic<C: Curve>(
     // Create CSV writer from the file
     let mut wtr = csv::Writer::from_writer(file);
     // explicit header
-          wtr.write_record([
+    wtr.write_record([
         "bin",
         "price",
         "delta_x",
