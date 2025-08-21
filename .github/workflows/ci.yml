@@ -9,7 +9,7 @@ on:
 env:
   CARGO_TERM_COLOR: always
   RUST_BACKTRACE: 1
-  PKG_CONFIG_PATH: /usr/lib/x86_64-linux-gnu/pkgconfig:/usr/share/pkgconfig:/usr/lib/pkgconfig
+  PKG_CONFIG_PATH: /usr/lib/x86_64-linux-gnu/pkgconfig:/usr/share/pkgconfig:/usr/lib/pkgconfig:/usr/lib/x86_64-linux-gnu/pkgconfig/fontconfig.pc
 
 jobs:
   check:
@@ -20,7 +20,12 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y pkg-config libfontconfig1-dev fontconfig libfontconfig-dev
+          sudo apt-get install -y pkg-config libfontconfig1-dev fontconfig
+          # Verify fontconfig installation and pkg-config setup
+          pkg-config --list-all | grep fontconfig || true
+          ls -la /usr/lib/x86_64-linux-gnu/pkgconfig/fontconfig.pc || true
+          ls -la /usr/lib/pkgconfig/fontconfig.pc || true
+          ls -la /usr/share/pkgconfig/fontconfig.pc || true
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - run: cargo check --all-features
@@ -33,7 +38,12 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y pkg-config libfontconfig1-dev fontconfig libfontconfig-dev
+          sudo apt-get install -y pkg-config libfontconfig1-dev fontconfig
+          # Verify fontconfig installation and pkg-config setup
+          pkg-config --list-all | grep fontconfig || true
+          ls -la /usr/lib/x86_64-linux-gnu/pkgconfig/fontconfig.pc || true
+          ls -la /usr/lib/pkgconfig/fontconfig.pc || true
+          ls -la /usr/share/pkgconfig/fontconfig.pc || true
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - run: cargo test --all-features
@@ -67,7 +77,12 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y pkg-config libfontconfig1-dev fontconfig libfontconfig-dev
+          sudo apt-get install -y pkg-config libfontconfig1-dev fontconfig
+          # Verify fontconfig installation and pkg-config setup
+          pkg-config --list-all | grep fontconfig || true
+          ls -la /usr/lib/x86_64-linux-gnu/pkgconfig/fontconfig.pc || true
+          ls -la /usr/lib/pkgconfig/fontconfig.pc || true
+          ls -la /usr/share/pkgconfig/fontconfig.pc || true
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - run: cargo install cargo-tarpaulin
@@ -101,7 +116,12 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y pkg-config libfontconfig1-dev fontconfig libfontconfig-dev
+          sudo apt-get install -y pkg-config libfontconfig1-dev fontconfig
+          # Verify fontconfig installation and pkg-config setup
+          pkg-config --list-all | grep fontconfig || true
+          ls -la /usr/lib/x86_64-linux-gnu/pkgconfig/fontconfig.pc || true
+          ls -la /usr/lib/pkgconfig/fontconfig.pc || true
+          ls -la /usr/share/pkgconfig/fontconfig.pc || true
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - run: cargo build --release
@@ -138,7 +158,12 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y pkg-config libfontconfig1-dev fontconfig libfontconfig-dev
+          sudo apt-get install -y pkg-config libfontconfig1-dev fontconfig
+          # Verify fontconfig installation and pkg-config setup
+          pkg-config --list-all | grep fontconfig || true
+          ls -la /usr/lib/x86_64-linux-gnu/pkgconfig/fontconfig.pc || true
+          ls -la /usr/lib/pkgconfig/fontconfig.pc || true
+          ls -la /usr/share/pkgconfig/fontconfig.pc || true
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - run: cargo doc --no-deps --all-features
@@ -152,7 +177,12 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y pkg-config libfontconfig1-dev fontconfig libfontconfig-dev
+          sudo apt-get install -y pkg-config libfontconfig1-dev fontconfig
+          # Verify fontconfig installation and pkg-config setup
+          pkg-config --list-all | grep fontconfig || true
+          ls -la /usr/lib/x86_64-linux-gnu/pkgconfig/fontconfig.pc || true
+          ls -la /usr/lib/pkgconfig/fontconfig.pc || true
+          ls -la /usr/share/pkgconfig/fontconfig.pc || true
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - run: cargo publish --dry-run
