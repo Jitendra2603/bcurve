@@ -79,9 +79,9 @@ struct Args {
 
     #[arg(long, default_value = "out")]
     out_dir: String,
-    #[arg(long, default_value_t = true)]
+    #[arg(long = "no-draw", action = clap::ArgAction::SetFalse, default_value_t = true)]
     draw: bool,
-    #[arg(long, default_value_t = false)]
+    #[arg(long, action = clap::ArgAction::SetTrue)]
     verbose: bool,
 }
 
