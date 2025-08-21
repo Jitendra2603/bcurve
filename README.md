@@ -25,22 +25,22 @@ graph TB
     end
 
     subgraph "Allocation Mechanisms"
-        GEO[Geometric: ΔX_i = ΔX₀·r^i]
-        LOG[Logistic: P(S) sigmoid]
+        GEO["Geometric: ΔX_i = ΔX₀·r^i"]
+        LOG["Logistic: P⟨S⟩ sigmoid"]
         GEO --> DELTA[ΔX per bin]
         LOG --> DELTA
     end
 
     subgraph "Fee Model"
-        BASE[Base Fee: f_b = B·s]
-        VAR[Variable Fee: f_v = A·(v_a·s)²]
+        BASE["Base Fee: f_b = B·s"]
+        VAR["Variable Fee: f_v = A·⟨v_a·s⟩²"]
         BASE --> TOTAL[Total Fee]
         VAR --> TOTAL
         TOTAL --> CAP[Cap at f_max]
     end
 
     subgraph "Verification"
-        NUM[Numerical Sum: Σ ΔX_i]
+        NUM["Numerical Sum: Σ ΔX_i"]
         CLOSED[Closed Form: S_n]
         NUM --> COMPARE[Compare & Validate]
         CLOSED --> COMPARE
