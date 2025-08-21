@@ -28,19 +28,31 @@ pub fn verify_geometric(c: &Geometric, bins: i64) -> Result<Report> {
 
     for i in 0..bins {
         let dx = c.delta_x_of_bin(i);
-        if dx < 0.0 { return Err(anyhow!("ΔX_{} < 0", i)); }
+        if dx < 0.0 {
+            return Err(anyhow!("ΔX_{} < 0", i));
+        }
         let t = s_sum + dx;
-        if s_sum.abs() >= dx.abs() { comp += (s_sum - t) + dx; } else { comp += (dx - t) + s_sum; }
+        if s_sum.abs() >= dx.abs() {
+            comp += (s_sum - t) + dx;
+        } else {
+            comp += (dx - t) + s_sum;
+        }
         s_sum = t;
 
         let p = c.price_of_bin(i);
-        if p <= prev_px { monotone_ok = false; }
+        if p <= prev_px {
+            monotone_ok = false;
+        }
         prev_px = p;
     }
     let s_sum = s_sum + comp;
 
     let s_closed = c.s_n_closed(bins);
-    let rel = if s_closed.abs() > 0.0 { (s_sum - s_closed).abs() / s_closed.abs() } else { 0.0 };
+    let rel = if s_closed.abs() > 0.0 {
+        (s_sum - s_closed).abs() / s_closed.abs()
+    } else {
+        0.0
+    };
 
     Ok(Report {
         bins,

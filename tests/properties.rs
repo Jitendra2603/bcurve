@@ -1,7 +1,7 @@
 use approx::assert_relative_eq;
-use proptest::prelude::*;
-use bcurve::curves::{Grid, Geometric, LogisticS, Curve};
+use bcurve::curves::{Curve, Geometric, Grid, LogisticS};
 use bcurve::dlmm::DlmmFeeParams;
+use proptest::prelude::*;
 
 proptest! {
     #[test]

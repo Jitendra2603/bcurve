@@ -2,7 +2,7 @@
 #![warn(rust_2018_idioms)]
 #![warn(missing_docs)]
 //! Library entry for DLMM Bonding Curve.
-//! 
+//!
 //! This crate provides mathematically rigorous implementations of bonding curves
 //! suitable for discrete liquidity market makers (DLMM), with verification tools
 //! and visualization capabilities.
