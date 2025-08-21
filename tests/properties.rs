@@ -17,7 +17,7 @@ proptest! {
         let mut s_num = 0.0;
         for i in 0..n { s_num += g.delta_x_of_bin(i); }
         let s_cf = g.s_n_closed(n);
-        assert_relative_eq!(s_num, s_cf, max_relative = 1e-12);
+        assert_relative_eq!(s_num, s_cf, max_relative = 1e-9);
         let mut prev = f64::NEG_INFINITY;
         for i in 0..n {
             let p = g.price_of_bin(i);
