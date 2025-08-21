@@ -120,11 +120,26 @@ Logistic S-curve:
 
 ## Output
 
-* `schedule.csv`: Bin-by-bin allocation table with
-  `fee_base, fee_var, fee_total, surcharge_launch_pct, fee_total_plus_surcharge`
+All output files are written to the directory specified by `--out-dir` (defaults to `out/`):
+
+* `schedule.csv`: Bin-by-bin allocation table with:
+  ```
+  bin,price,delta_x,supply_cum,revenue_bin,revenue_cum,
+  fee_base,fee_var,fee_total,surcharge_launch_pct,fee_total_plus_surcharge
+  ```
 * `price_vs_supply.png`: Price vs cumulative supply
 * `tokens_per_bin.png`: ΔX_i distribution
 * `fee_vs_volatility.png`: Fee response function
+
+Example:
+```bash
+# Create output directory and run with default output path
+mkdir -p out/
+./target/release/bcurve --mode geometric --p0 0.01 --bin-step-bps 10 --theta 0.6 --target-supply 100000000
+
+# Or specify a custom output directory
+./target/release/bcurve --mode geometric --p0 0.01 --bin-step-bps 10 --theta 0.6 --target-supply 100000000 --out-dir my_output/
+```
 
 ## Parameters
 

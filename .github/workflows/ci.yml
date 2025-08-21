@@ -144,8 +144,9 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - run: cargo build --release
-      - name: Run geometric example
+      - name: Run examples
         run: |
+          # Geometric example
           ./target/release/bcurve \
             --mode geometric \
             --p0 0.01 --bin-step-bps 10 \
@@ -153,12 +154,39 @@ jobs:
             --target-supply 100000000 \
             --end-price 0.02 \
             --verbose \
-            --no-draw \
-            --out-dir out_ci_test
-      - name: Check output exists
+            --out-dir out_geometric
+          
+          # Logistic example
+          ./target/release/bcurve \
+            --mode logistic \
+            --p0 0.0015 --bin-step-bps 10 \
+            --p-min 0.001 --p-max 0.05 \
+            --k 0.00000008 \
+            --end-price 0.03 \
+            --verbose \
+            --out-dir out_logistic
+
+      - name: Check outputs
         run: |
-          test -f out_ci_test/schedule.csv
-          echo "✓ Schedule CSV generated successfully"
+          test -f out_geometric/schedule.csv
+          test -f out_geometric/price_vs_supply.png
+          test -f out_geometric/tokens_per_bin.png
+          test -f out_geometric/fee_vs_volatility.png
+          echo "✓ Geometric curve outputs generated successfully"
+
+          test -f out_logistic/schedule.csv
+          test -f out_logistic/price_vs_supply.png
+          test -f out_logistic/tokens_per_bin.png
+          test -f out_logistic/fee_vs_volatility.png
+          echo "✓ Logistic curve outputs generated successfully"
+
+      - name: Upload outputs
+        uses: actions/upload-artifact@v4
+        with:
+          name: curve-outputs
+          path: |
+            out_geometric/
+            out_logistic/
 
   security-audit:
     name: Security Audit
