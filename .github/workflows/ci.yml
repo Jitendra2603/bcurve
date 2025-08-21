@@ -23,7 +23,7 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y pkg-config fontconfig libfontconfig1 libfontconfig1-dev libfreetype6-dev
+          sudo apt-get install -y pkg-config fontconfig libfontconfig1 libfontconfig1-dev libfreetype6-dev libexpat1-dev
           # Verify fontconfig installation
           echo "=== Fontconfig package info ==="
           dpkg -l | grep -i fontconfig || true
@@ -45,7 +45,7 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y pkg-config fontconfig libfontconfig1 libfontconfig1-dev libfreetype6-dev
+          sudo apt-get install -y pkg-config fontconfig libfontconfig1 libfontconfig1-dev libfreetype6-dev libexpat1-dev
           # Verify fontconfig installation
           echo "=== Fontconfig package info ==="
           dpkg -l | grep -i fontconfig || true
@@ -88,7 +88,7 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y pkg-config fontconfig libfontconfig1 libfontconfig1-dev libfreetype6-dev
+          sudo apt-get install -y pkg-config fontconfig libfontconfig1 libfontconfig1-dev libfreetype6-dev libexpat1-dev
           # Verify fontconfig installation
           echo "=== Fontconfig package info ==="
           dpkg -l | grep -i fontconfig || true
@@ -131,7 +131,7 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y pkg-config fontconfig libfontconfig1 libfontconfig1-dev libfreetype6-dev
+          sudo apt-get install -y pkg-config fontconfig libfontconfig1 libfontconfig1-dev libfreetype6-dev libexpat1-dev
           # Verify fontconfig installation
           echo "=== Fontconfig package info ==="
           dpkg -l | grep -i fontconfig || true
@@ -177,7 +177,7 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y pkg-config fontconfig libfontconfig1 libfontconfig1-dev libfreetype6-dev
+          sudo apt-get install -y pkg-config fontconfig libfontconfig1 libfontconfig1-dev libfreetype6-dev libexpat1-dev
           # Verify fontconfig installation
           echo "=== Fontconfig package info ==="
           dpkg -l | grep -i fontconfig || true
@@ -200,7 +200,7 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y pkg-config fontconfig libfontconfig1 libfontconfig1-dev libfreetype6-dev
+          sudo apt-get install -y pkg-config fontconfig libfontconfig1 libfontconfig1-dev libfreetype6-dev libexpat1-dev
           # Verify fontconfig installation
           echo "=== Fontconfig package info ==="
           dpkg -l | grep -i fontconfig || true
