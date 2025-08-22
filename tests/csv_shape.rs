@@ -6,8 +6,11 @@ use std::process::Command;
 #[test]
 fn schedule_has_one_header_and_no_demo_cols() {
     let out = "out_shape_test";
-    let status = Command::new("./target/release/bcurve")
+    let status = Command::new("cargo")
         .args([
+            "run",
+            "--release",
+            "--",
             "--mode",
             "geometric",
             "--p0",
@@ -61,8 +64,11 @@ fn schedule_has_one_header_and_no_demo_cols() {
 #[test]
 fn compensated_summation_accuracy() {
     let out = "out_accuracy_test";
-    let status = Command::new("./target/release/bcurve")
+    let status = Command::new("cargo")
         .args([
+            "run",
+            "--release",
+            "--",
             "--mode",
             "geometric",
             "--p0",
