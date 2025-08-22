@@ -5,7 +5,7 @@ edition = "2021"
 description = "DLMM bonding curve"
 license = "MIT"
 repository = "https://github.com/jitendra2603/bcurve"
-keywords = ["AMM", "DLMM", "bonding-curve", "market-microstructure", "quant"]
+keywords = ["AMM", "DLMM", "bonding-curve", "microstructure", "quant"]
 categories = ["science", "mathematics", "finance"]
 
 [dependencies]
