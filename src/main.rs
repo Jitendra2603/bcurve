@@ -296,9 +296,13 @@ fn write_schedule_csv_geometric(
         c.r()
     )?;
     writeln!(file, "# Volatility accumulator: {}", va)?;
-    
+
     // Launch policy configuration
-    writeln!(file, "# Launch policy: allowlist={} addresses", policy.allowlist.len())?;
+    writeln!(
+        file,
+        "# Launch policy: allowlist={} addresses",
+        policy.allowlist.len()
+    )?;
     writeln!(
         file,
         "# Surcharge ramp: {:.1}% → {:.1}% over {:.0}s",
@@ -326,7 +330,9 @@ fn write_schedule_csv_geometric(
     writeln!(file)?;
 
     // Create CSV writer (write one header row)
-    let mut wtr = csv::WriterBuilder::new().has_headers(false).from_writer(file);
+    let mut wtr = csv::WriterBuilder::new()
+        .has_headers(false)
+        .from_writer(file);
     // explicit header
     wtr.write_record([
         "bin",
@@ -499,9 +505,13 @@ fn write_schedule_csv_generic<C: Curve>(
     writeln!(file, "# Mode: {}", c.name())?;
     writeln!(file, "# Volatility accumulator: {}", va)?;
     writeln!(file, "# Total supply: {:.6}", c.cumulative_supply(bins))?;
-    
+
     // Launch policy configuration
-    writeln!(file, "# Launch policy: allowlist={} addresses", policy.allowlist.len())?;
+    writeln!(
+        file,
+        "# Launch policy: allowlist={} addresses",
+        policy.allowlist.len()
+    )?;
     writeln!(
         file,
         "# Surcharge ramp: {:.1}% → {:.1}% over {:.0}s",
@@ -510,7 +520,11 @@ fn write_schedule_csv_generic<C: Curve>(
 
     // Optional price-guard metadata
     if let Some(impact_bps) = price_guard_bps {
-        for (label, bin) in [("start", 0), ("mid", bins / 2), ("end", bins.saturating_sub(1))] {
+        for (label, bin) in [
+            ("start", 0),
+            ("mid", bins / 2),
+            ("end", bins.saturating_sub(1)),
+        ] {
             let price = c.price_of_bin(bin);
             writeln!(file, "# Guard @ {} (bin {}, P={:.12}):", label, bin, price)?;
             writeln!(
@@ -529,7 +543,9 @@ fn write_schedule_csv_generic<C: Curve>(
     writeln!(file)?;
 
     // Create CSV writer (write one header row)
-    let mut wtr = csv::WriterBuilder::new().has_headers(false).from_writer(file);
+    let mut wtr = csv::WriterBuilder::new()
+        .has_headers(false)
+        .from_writer(file);
     // explicit header
     wtr.write_record([
         "bin",

@@ -65,25 +65,25 @@ pub struct LaunchPhasePolicy {
 }
 impl LaunchPhasePolicy {
     /// Checks if an address is exempt from launch phase surcharges.
-    /// 
+    ///
     /// This is a core API method for integrators implementing launch phase policies.
     /// Addresses on the allowlist can trade without paying the time-decaying surcharge.
-    /// 
+    ///
     /// # Example
     /// ```
     /// use bcurve::dlmm::LaunchPhasePolicy;
     /// use std::collections::HashSet;
-    /// 
+    ///
     /// let mut allowlist = HashSet::new();
     /// allowlist.insert("whitelisted_user_123".to_string());
-    /// 
+    ///
     /// let policy = LaunchPhasePolicy {
     ///     allowlist,
     ///     tau_start_pct: 50.0,
     ///     tau_end_pct: 3.0,
     ///     ramp_secs: 60.0,
     /// };
-    /// 
+    ///
     /// assert!(policy.is_allowed("whitelisted_user_123"));
     /// assert!(!policy.is_allowed("regular_user_456"));
     /// ```
