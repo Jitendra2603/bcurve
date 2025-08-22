@@ -1,5 +1,12 @@
 # DLMM Bonding Curve
 
+[![Rust](https://img.shields.io/badge/rust-1.70%2B-orange.svg)](https://www.rust-lang.org)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)](https://github.com/jitendra2603/bcurve/actions)
+[![Tests](https://img.shields.io/badge/tests-passing-brightgreen.svg)](https://github.com/jitendra2603/bcurve/actions)
+[![Documentation](https://docs.rs/bcurve/badge.svg)](https://docs.rs/bcurve)
+[![Crates.io](https://img.shields.io/crates/v/bcurve.svg)](https://crates.io/crates/bcurve)
+
 Token allocation schedules on DLMM price lattices
 
 ## Model
@@ -118,18 +125,41 @@ Logistic S-curve:
   --end-price 0.03
 ```
 
+With launch phase policy and price guards:
+```bash
+# Create allowlist file
+echo -e "team_member_1\nwhale_address_2\nprivileged_trader_3" > allowlist.txt
+
+./target/release/bcurve \
+  --mode geometric \
+  --p0 0.01 --bin-step-bps 10 \
+  --theta 0.6 \
+  --target-supply 100000000 \
+  --allowlist-path allowlist.txt \
+  --tau-start-pct 75.0 \
+  --tau-end-pct 5.0 \
+  --tau-ramp-secs 120.0 \
+  --price-guard-bps 50.0 \
+  --verbose
+```
+
 ## Output
 
 All output files are written to the directory specified by `--out-dir` (defaults to `out/`):
 
 * `schedule.csv`: Bin-by-bin allocation table with:
   ```
-  bin,price,delta_x,supply_cum,revenue_bin,revenue_cum,
-  fee_base,fee_var,fee_total,surcharge_launch_pct,fee_total_plus_surcharge
+  bin,price,delta_x,supply_cum,revenue_bin,revenue_cum,fee_base,fee_var,fee_total
   ```
 * `price_vs_supply.png`: Price vs cumulative supply
 * `tokens_per_bin.png`: ΔX_i distribution
 * `fee_vs_volatility.png`: Fee response function
+
+CSV metadata includes launch policy configuration:
+```
+# Launch policy: allowlist=3 addresses
+# Surcharge ramp: 50.0% → 3.0% over 30s
+```
 
 Example:
 ```bash
@@ -164,7 +194,44 @@ mkdir -p out/
 * `--base-factor`: Base fee factor B
 * `--variable-fee-control`: Variable fee control A
 * `--vol-accum`: Volatility accumulator
-* `--max-fee-rate`: Maximum fee cap
+* `--max-fee-rate`: Maximum fee cap (decimal in [0,1], e.g., 0.05 = 5%)
+
+### Launch Phase Policy
+* `--allowlist-path`: Path to newline-separated allowlist file (addresses exempt from surcharge)
+* `--tau-start-pct`: Initial surcharge percentage (default: 50.0%)
+* `--tau-end-pct`: Final surcharge percentage (default: 3.0%)
+* `--tau-ramp-secs`: Surcharge decay duration in seconds (default: 30.0s)
+
+### Optional Features
+* `--price-guard-bps`: Include price impact guard metadata (e.g., 50.0 for 0.5%)
+
+## Library Usage
+
+This crate can be used as a library for custom integrations:
+
+```rust
+use bcurve::dlmm::LaunchPhasePolicy;
+use std::collections::HashSet;
+
+// Create launch phase policy with allowlist
+let mut allowlist = HashSet::new();
+allowlist.insert("privileged_trader_123".to_string());
+
+let policy = LaunchPhasePolicy {
+    allowlist,
+    tau_start_pct: 50.0,  // 50% initial surcharge
+    tau_end_pct: 3.0,     // 3% final surcharge
+    ramp_secs: 60.0,      // 60 second ramp period
+};
+
+// Check if address is exempt from surcharge
+if policy.is_allowed("privileged_trader_123") {
+    // Address can trade without surcharge
+} else {
+    // Apply time-decaying surcharge: τ(t) 
+    let surcharge_pct = policy.tau(seconds_since_launch);
+}
+```
 
 ## Testing
 
@@ -172,10 +239,10 @@ mkdir -p out/
 cargo test
 ```
 
-Property tests verify:
-* Closed-form equality S_n = ΔX_0(1-r^n)/(1-r)
-* Price monotonicity P_i < P_{i+1}
-* Non-negative allocations ΔX_i ≥ 0
+Test suite includes:
+* **Property tests**: Closed-form equality, monotonicity, non-negative allocations
+* **CSV validation**: Header format, compensated summation accuracy
+* **Launch policy**: Allowlist functionality, surcharge calculations
 
 ## Integration
 

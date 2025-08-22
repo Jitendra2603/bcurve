@@ -4,7 +4,7 @@ mod plot;
 mod verifier;
 
 use crate::curves::{Curve, Geometric, Grid, LogisticS};
-use crate::dlmm::{DlmmFeeParams, LaunchPhaseSurcharge};
+use crate::dlmm::{DlmmFeeParams, LaunchPhasePolicy};
 use crate::plot::{plot_fee_vs_vol, plot_price_vs_supply, plot_tokens_per_bin};
 use crate::verifier::verify_geometric;
 
@@ -61,21 +61,20 @@ struct Args {
     #[arg(long, default_value_t = 0.10)]
     max_fee_rate: f64, // decimal default 10%
 
-    // legacy integer knobs (kept but unused unless you switch to integer mode later)
-    #[arg(long, default_value_t = 99_999_999_999.0)]
-    fee_offset: f64,
-    #[arg(long, default_value_t = 100_000_000_000.0)]
-    fee_scale: f64,
-
-    // Transient surcharge
+    // Launch-phase policy
     #[arg(long, default_value_t = 50.0)]
     tau_start_pct: f64,
     #[arg(long, default_value_t = 3.0)]
     tau_end_pct: f64,
     #[arg(long, default_value_t = 30.0)]
     tau_ramp_secs: f64,
+    /// Path to a newline-separated allowlist; addresses here are exempt from τ(t)
+    #[arg(long, alias = "whitelist-path")]
+    allowlist_path: Option<String>,
+
+    /// Optional: if provided, include price-guard metadata using this impact (bps)
     #[arg(long)]
-    whitelist_path: Option<String>,
+    price_guard_bps: Option<f64>,
 
     #[arg(long, default_value = "out")]
     out_dir: String,
@@ -96,8 +95,6 @@ struct Row {
     fee_base: f64,
     fee_var: f64,
     fee_total: f64,
-    surcharge_launch_pct: f64,
-    fee_total_plus_surcharge: f64,
 }
 
 fn validate_inputs(args: &Args, grid: &Grid) -> Result<()> {
@@ -115,11 +112,19 @@ fn validate_inputs(args: &Args, grid: &Grid) -> Result<()> {
             return Err(anyhow!("bins must be ≥ 1 (got {})", n));
         }
     }
-    if args.max_fee_rate < 0.0 {
+    if !(0.0..=1.0).contains(&args.max_fee_rate) {
         return Err(anyhow!(
-            "max_fee_rate must be ≥ 0 (got {})",
+            "max_fee_rate must be in [0,1] decimal (got {})",
             args.max_fee_rate
         ));
+    }
+    if let Some(bps) = args.price_guard_bps {
+        if !(0.0..10_000.0).contains(&bps) {
+            return Err(anyhow!(
+                "price_guard_bps must be in [0, 10000) (got {})",
+                bps
+            ));
+        }
     }
     Ok(())
 }
@@ -132,19 +137,19 @@ fn main() -> Result<()> {
     };
     validate_inputs(&args, &grid)?;
 
-    let mut whitelist = HashSet::new();
-    if let Some(path) = &args.whitelist_path {
+    let mut allowlist = HashSet::new();
+    if let Some(path) = &args.allowlist_path {
         if Path::new(path).exists() {
             for line in std::fs::read_to_string(path)?.lines() {
                 let addr = line.trim();
                 if !addr.is_empty() {
-                    whitelist.insert(addr.to_string());
+                    allowlist.insert(addr.to_string());
                 }
             }
         }
     }
-    let surcharge = LaunchPhaseSurcharge {
-        whitelist,
+    let policy = LaunchPhasePolicy {
+        allowlist,
         tau_start_pct: args.tau_start_pct,
         tau_end_pct: args.tau_end_pct,
         ramp_secs: args.tau_ramp_secs,
@@ -156,15 +161,13 @@ fn main() -> Result<()> {
         bin_step_bps: args.bin_step_bps,
         variable_fee_control: args.variable_fee_control,
         max_fee_rate: args.max_fee_rate,
-        fee_offset: args.fee_offset,
-        fee_scale: args.fee_scale,
     };
 
     create_dir_all(&args.out_dir)?;
 
     match args.mode.as_str() {
-        "geometric" => run_geometric(&args, grid, fees, surcharge),
-        "logistic" => run_logistic(&args, grid, fees, surcharge),
+        "geometric" => run_geometric(&args, grid, fees, policy),
+        "logistic" => run_logistic(&args, grid, fees, policy),
         m => Err(anyhow!("unknown mode: {}", m)),
     }
 }
@@ -182,7 +185,7 @@ fn run_geometric(
     args: &Args,
     grid: Grid,
     fees: DlmmFeeParams,
-    surcharge: LaunchPhaseSurcharge,
+    policy: LaunchPhasePolicy,
 ) -> Result<()> {
     let bins = if let Some(n) = args.bins {
         n
@@ -225,7 +228,7 @@ fn run_geometric(
             rep.monotone_ok
         );
         println!(
-            "  Growth factor g=q^θ={:.6}, Decay factor r=q^(θ-1)={:.6}",
+            "  Growth factor g=q^θ={:.12}, Decay factor r=q^(θ-1)={:.12}",
             curve.g(),
             curve.r()
         );
@@ -234,22 +237,13 @@ fn run_geometric(
             bins,
             curve.cumulative_supply(bins)
         );
-        println!("  Whitelist addresses: {}", surcharge.whitelist.len());
-
-        // Show surcharge behavior
-        for t in [0.0, 15.0, 30.0, 60.0] {
-            println!("  Launch surcharge at t={}s: {:.1}%", t, surcharge.tau(t));
-        }
-
-        // Example: check if an address is whitelisted
-        if !surcharge.whitelist.is_empty() {
-            let example_addr = surcharge.whitelist.iter().next().unwrap();
-            println!(
-                "  Example: {} is whitelisted: {}",
-                example_addr,
-                surcharge.is_whitelisted(example_addr)
-            );
-        }
+        println!("  Allowlist size: {}", policy.allowlist.len());
+        println!(
+            "  Launch surcharge: τ(0s)={:.1}% → τ({:.0}s)={:.1}%",
+            policy.tau(0.0),
+            policy.ramp_secs,
+            policy.tau(policy.ramp_secs)
+        );
     }
 
     write_schedule_csv_geometric(
@@ -258,7 +252,8 @@ fn run_geometric(
         bins,
         fees,
         args.vol_accum,
-        &surcharge,
+        &policy,
+        args.price_guard_bps,
     )?;
     if args.draw {
         plot_price_vs_supply(
@@ -285,7 +280,8 @@ fn write_schedule_csv_geometric(
     bins: i64,
     fees: DlmmFeeParams,
     va: f64,
-    surcharge: &LaunchPhaseSurcharge,
+    policy: &LaunchPhasePolicy,
+    price_guard_bps: Option<f64>,
 ) -> Result<()> {
     let file_path = format!("{}/schedule.csv", out_dir);
     let mut file = File::create(&file_path)?;
@@ -295,35 +291,42 @@ fn write_schedule_csv_geometric(
     writeln!(file, "# Mode: Geometric, θ={}, R₀={}", c.theta, c.r0_quote)?;
     writeln!(
         file,
-        "# Growth factor g={:.6}, Decay factor r={:.6}",
+        "# Growth factor g={:.12}, Decay factor r={:.12}",
         c.g(),
         c.r()
     )?;
     writeln!(file, "# Volatility accumulator: {}", va)?;
+    
+    // Launch policy configuration
+    writeln!(file, "# Launch policy: allowlist={} addresses", policy.allowlist.len())?;
+    writeln!(
+        file,
+        "# Surcharge ramp: {:.1}% → {:.1}% over {:.0}s",
+        policy.tau_start_pct, policy.tau_end_pct, policy.ramp_secs
+    )?;
 
-    // Price impact guards (example calculation at mid-point)
-    let mid_bin = bins / 2;
-    let mid_price = c.price_of_bin(mid_bin);
-    let impact_bps = 50.0; // 0.5% example
-    writeln!(
-        file,
-        "# Price guards at bin {} (P={:.6}):",
-        mid_bin, mid_price
-    )?;
-    writeln!(
-        file,
-        "#   Min price X→Y: {:.6}",
-        DlmmFeeParams::min_price_sell_x_for_y(mid_price, impact_bps)
-    )?;
-    writeln!(
-        file,
-        "#   Min price Y→X: {:.6}",
-        DlmmFeeParams::min_price_sell_y_for_x(mid_price, impact_bps)
-    )?;
+    // Optional price-guard metadata
+    if let Some(impact_bps) = price_guard_bps {
+        let bins_to_report = [0, bins / 2, bins.saturating_sub(1)];
+        for b in bins_to_report {
+            let p = c.price_of_bin(b);
+            writeln!(file, "# Guard @ bin {} (P={:.12}):", b, p)?;
+            writeln!(
+                file,
+                "#   Min X→Y: {:.12}",
+                DlmmFeeParams::min_price_sell_x_for_y(p, impact_bps)
+            )?;
+            writeln!(
+                file,
+                "#   Min Y→X: {:.12}",
+                DlmmFeeParams::min_price_sell_y_for_x(p, impact_bps)
+            )?;
+        }
+    }
     writeln!(file)?;
 
-    // Create CSV writer from the file
-    let mut wtr = csv::Writer::from_writer(file);
+    // Create CSV writer (write one header row)
+    let mut wtr = csv::WriterBuilder::new().has_headers(false).from_writer(file);
     // explicit header
     wtr.write_record([
         "bin",
@@ -335,37 +338,48 @@ fn write_schedule_csv_geometric(
         "fee_base",
         "fee_var",
         "fee_total",
-        "surcharge_launch_pct",
-        "fee_total_plus_surcharge",
     ])?;
 
+    // Neumaier compensated sums
     let mut s_cum = 0.0;
+    let mut s_cmp = 0.0;
     let mut r_cum = 0.0;
+    let mut r_cmp = 0.0;
     let fee_b = fees.base_fee_rate();
     let fee_v = fees.variable_fee_rate(va);
     let fee_tot = fees.total_fee_rate(va);
-    let tau0 = surcharge.tau(0.0); // %
-    let tau0_dec = tau0 / 100.0;
 
     for i in 0..bins {
         let p = c.price_of_bin(i);
         let dx = c.delta_x_of_bin(i);
         let r_bin = p * dx;
-        s_cum += dx;
-        r_cum += r_bin;
+        // supply
+        let t_s = s_cum + dx;
+        if s_cum.abs() >= dx.abs() {
+            s_cmp += (s_cum - t_s) + dx;
+        } else {
+            s_cmp += (dx - t_s) + s_cum;
+        }
+        s_cum = t_s;
+        // revenue
+        let t_r = r_cum + r_bin;
+        if r_cum.abs() >= r_bin.abs() {
+            r_cmp += (r_cum - t_r) + r_bin;
+        } else {
+            r_cmp += (r_bin - t_r) + r_cum;
+        }
+        r_cum = t_r;
 
         wtr.serialize(Row {
             bin: i,
             price: p,
             delta_x: dx,
-            supply_cum: s_cum,
+            supply_cum: s_cum + s_cmp,
             revenue_bin: r_bin,
-            revenue_cum: r_cum,
+            revenue_cum: r_cum + r_cmp,
             fee_base: fee_b,
             fee_var: fee_v,
             fee_total: fee_tot,
-            surcharge_launch_pct: tau0,
-            fee_total_plus_surcharge: fee_tot + tau0_dec,
         })?;
     }
     wtr.flush()?;
@@ -376,7 +390,7 @@ fn run_logistic(
     args: &Args,
     grid: Grid,
     fees: DlmmFeeParams,
-    surcharge: LaunchPhaseSurcharge,
+    policy: LaunchPhasePolicy,
 ) -> Result<()> {
     let p_max = args
         .p_max
@@ -431,12 +445,13 @@ fn run_logistic(
             bins,
             curve.cumulative_supply(bins)
         );
-        println!("  Whitelist addresses: {}", surcharge.whitelist.len());
-
-        // Show surcharge behavior
-        for t in [0.0, 15.0, 30.0, 60.0] {
-            println!("  Launch surcharge at t={}s: {:.1}%", t, surcharge.tau(t));
-        }
+        println!("  Allowlist size: {}", policy.allowlist.len());
+        println!(
+            "  Launch surcharge: τ(0s)={:.1}% → τ({:.0}s)={:.1}%",
+            policy.tau(0.0),
+            policy.ramp_secs,
+            policy.tau(policy.ramp_secs)
+        );
     }
 
     write_schedule_csv_generic(
@@ -445,7 +460,8 @@ fn run_logistic(
         bins,
         fees,
         args.vol_accum,
-        &surcharge,
+        &policy,
+        args.price_guard_bps,
     )?;
     if args.draw {
         plot_price_vs_supply(
@@ -472,7 +488,8 @@ fn write_schedule_csv_generic<C: Curve>(
     bins: i64,
     fees: DlmmFeeParams,
     va: f64,
-    surcharge: &LaunchPhaseSurcharge,
+    policy: &LaunchPhasePolicy,
+    price_guard_bps: Option<f64>,
 ) -> Result<()> {
     let file_path = format!("{}/schedule.csv", out_dir);
     let mut file = File::create(&file_path)?;
@@ -482,51 +499,37 @@ fn write_schedule_csv_generic<C: Curve>(
     writeln!(file, "# Mode: {}", c.name())?;
     writeln!(file, "# Volatility accumulator: {}", va)?;
     writeln!(file, "# Total supply: {:.6}", c.cumulative_supply(bins))?;
-
-    // Price impact guards at several points
-    for (label, bin) in [("start", 0), ("mid", bins / 2), ("end", bins - 1)].iter() {
-        let price = c.price_of_bin(*bin);
-        let impact_bps = 50.0; // 0.5% example
-        writeln!(
-            file,
-            "# Price guards at {} (bin {}, P={:.6}):",
-            label, bin, price
-        )?;
-        writeln!(
-            file,
-            "#   Min price X→Y: {:.6}",
-            DlmmFeeParams::min_price_sell_x_for_y(price, impact_bps)
-        )?;
-        writeln!(
-            file,
-            "#   Min price Y→X: {:.6}",
-            DlmmFeeParams::min_price_sell_y_for_x(price, impact_bps)
-        )?;
-    }
-
-    // Show surcharge decay
+    
+    // Launch policy configuration
+    writeln!(file, "# Launch policy: allowlist={} addresses", policy.allowlist.len())?;
     writeln!(
         file,
-        "# Launch surcharge: {:.1}% → {:.1}% over {} seconds",
-        surcharge.tau_start_pct, surcharge.tau_end_pct, surcharge.ramp_secs
+        "# Surcharge ramp: {:.1}% → {:.1}% over {:.0}s",
+        policy.tau_start_pct, policy.tau_end_pct, policy.ramp_secs
     )?;
-    if !surcharge.whitelist.is_empty() {
-        writeln!(
-            file,
-            "# Whitelisted addresses: {}",
-            surcharge.whitelist.len()
-        )?;
-        for addr in surcharge.whitelist.iter().take(3) {
-            writeln!(file, "#   - {}", addr)?;
-        }
-        if surcharge.whitelist.len() > 3 {
-            writeln!(file, "#   ... and {} more", surcharge.whitelist.len() - 3)?;
+
+    // Optional price-guard metadata
+    if let Some(impact_bps) = price_guard_bps {
+        for (label, bin) in [("start", 0), ("mid", bins / 2), ("end", bins.saturating_sub(1))] {
+            let price = c.price_of_bin(bin);
+            writeln!(file, "# Guard @ {} (bin {}, P={:.12}):", label, bin, price)?;
+            writeln!(
+                file,
+                "#   Min X→Y: {:.12}",
+                DlmmFeeParams::min_price_sell_x_for_y(price, impact_bps)
+            )?;
+            writeln!(
+                file,
+                "#   Min Y→X: {:.12}",
+                DlmmFeeParams::min_price_sell_y_for_x(price, impact_bps)
+            )?;
         }
     }
+
     writeln!(file)?;
 
-    // Create CSV writer from the file
-    let mut wtr = csv::Writer::from_writer(file);
+    // Create CSV writer (write one header row)
+    let mut wtr = csv::WriterBuilder::new().has_headers(false).from_writer(file);
     // explicit header
     wtr.write_record([
         "bin",
@@ -538,37 +541,48 @@ fn write_schedule_csv_generic<C: Curve>(
         "fee_base",
         "fee_var",
         "fee_total",
-        "surcharge_launch_pct",
-        "fee_total_plus_surcharge",
     ])?;
 
+    // Neumaier compensated sums
     let mut s_cum = 0.0;
+    let mut s_cmp = 0.0;
     let mut r_cum = 0.0;
+    let mut r_cmp = 0.0;
     let fee_b = fees.base_fee_rate();
     let fee_v = fees.variable_fee_rate(va);
     let fee_tot = fees.total_fee_rate(va);
-    let tau0 = surcharge.tau(0.0); // %
-    let tau0_dec = tau0 / 100.0;
 
     for i in 0..bins {
         let p = c.price_of_bin(i);
         let dx = c.delta_x_of_bin(i);
         let r_bin = p * dx;
-        s_cum += dx;
-        r_cum += r_bin;
+        // supply
+        let t_s = s_cum + dx;
+        if s_cum.abs() >= dx.abs() {
+            s_cmp += (s_cum - t_s) + dx;
+        } else {
+            s_cmp += (dx - t_s) + s_cum;
+        }
+        s_cum = t_s;
+        // revenue
+        let t_r = r_cum + r_bin;
+        if r_cum.abs() >= r_bin.abs() {
+            r_cmp += (r_cum - t_r) + r_bin;
+        } else {
+            r_cmp += (r_bin - t_r) + r_cum;
+        }
+        r_cum = t_r;
 
         wtr.serialize(Row {
             bin: i,
             price: p,
             delta_x: dx,
-            supply_cum: s_cum,
+            supply_cum: s_cum + s_cmp,
             revenue_bin: r_bin,
-            revenue_cum: r_cum,
+            revenue_cum: r_cum + r_cmp,
             fee_base: fee_b,
             fee_var: fee_v,
             fee_total: fee_tot,
-            surcharge_launch_pct: tau0,
-            fee_total_plus_surcharge: fee_tot + tau0_dec,
         })?;
     }
     wtr.flush()?;

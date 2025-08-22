@@ -1,12 +1,10 @@
-//! DLMM fee schedule and launch-phase surcharge policies
+//! DLMM fee schedule and launch-phase launch policy (allowlist + time-decay surcharge)
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 
-/// DLMM fee schedule in *decimal* space for simulation.
-///
-/// Implements base+variable fee model where variable fee grows with (volatility_accumulator * bin_step)^2.
-/// The dev formulas page shows OFFSET/SCALE for integer precision; we keep decimal here.
+/// DLMM fee schedule in decimal space.
+/// f = f_b + f_v, with f_b = B·s and f_v = A·(va·s)^2, capped at `max_fee_rate` (decimal, e.g. 0.05 = 5%).
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub struct DlmmFeeParams {
     /// Base factor B (dimensionless)
@@ -15,13 +13,8 @@ pub struct DlmmFeeParams {
     pub bin_step_bps: f64,
     /// Variable fee control A (dimensionless)
     pub variable_fee_control: f64,
-    /// Max total fee (decimal, e.g., 0.05 = 5%). If you pass ~1e8, we treat it as integer cap.
+    /// Max total fee (decimal, e.g., 0.05 = 5%).
     pub max_fee_rate: f64,
-
-    /// Fee offset for future integer-mode emulation (currently not used in decimal mode)
-    pub fee_offset: f64,
-    /// Fee scale for future integer-mode emulation (currently not used in decimal mode)
-    pub fee_scale: f64,
 }
 
 impl DlmmFeeParams {
@@ -41,14 +34,9 @@ impl DlmmFeeParams {
         self.variable_fee_control * (volatility_accumulator * s).powi(2)
     }
 
-    /// Total fee (decimal), capped. Integer-looking caps auto-converted (cap/1e8).
+    /// Total fee (decimal), capped at `max_fee_rate` (must be ≤ 1.0).
     pub fn total_fee_rate(&self, va: f64) -> f64 {
-        let cap = if self.max_fee_rate > 1.0 {
-            self.max_fee_rate / 1e8
-        } else {
-            self.max_fee_rate
-        }
-        .max(0.0);
+        let cap = self.max_fee_rate.max(0.0);
         (self.base_fee_rate() + self.variable_fee_rate(va)).min(cap)
     }
 
@@ -63,13 +51,11 @@ impl DlmmFeeParams {
     }
 }
 
-/// A neutral, policy-level surcharge active during the launch phase.
-///
-/// The surcharge τ(t) decays linearly from τ0 to τ1 over [0, T].
-#[derive(Default, Clone)]
-pub struct LaunchPhaseSurcharge {
-    /// Set of whitelisted addresses exempt from surcharge
-    pub whitelist: HashSet<String>,
+/// Launch-phase policy: allowlist + time-decaying surcharge τ(t) from τ0 to τ1 over [0, T].
+#[derive(Default, Clone, Debug)]
+pub struct LaunchPhasePolicy {
+    /// Addresses exempt from the surcharge
+    pub allowlist: HashSet<String>,
     /// Initial surcharge percentage at launch (t=0)
     pub tau_start_pct: f64,
     /// Final surcharge percentage after ramp period
@@ -77,10 +63,33 @@ pub struct LaunchPhaseSurcharge {
     /// Duration of the ramp period in seconds
     pub ramp_secs: f64,
 }
-impl LaunchPhaseSurcharge {
-    /// Checks if an address is whitelisted
-    pub fn is_whitelisted(&self, addr: &str) -> bool {
-        self.whitelist.contains(addr)
+impl LaunchPhasePolicy {
+    /// Checks if an address is exempt from launch phase surcharges.
+    /// 
+    /// This is a core API method for integrators implementing launch phase policies.
+    /// Addresses on the allowlist can trade without paying the time-decaying surcharge.
+    /// 
+    /// # Example
+    /// ```
+    /// use bcurve::dlmm::LaunchPhasePolicy;
+    /// use std::collections::HashSet;
+    /// 
+    /// let mut allowlist = HashSet::new();
+    /// allowlist.insert("whitelisted_user_123".to_string());
+    /// 
+    /// let policy = LaunchPhasePolicy {
+    ///     allowlist,
+    ///     tau_start_pct: 50.0,
+    ///     tau_end_pct: 3.0,
+    ///     ramp_secs: 60.0,
+    /// };
+    /// 
+    /// assert!(policy.is_allowed("whitelisted_user_123"));
+    /// assert!(!policy.is_allowed("regular_user_456"));
+    /// ```
+    #[allow(dead_code)] // Public API for library integrators, not used by CLI
+    pub fn is_allowed(&self, addr: &str) -> bool {
+        self.allowlist.contains(addr)
     }
     /// Calculates the surcharge percentage at a given time since launch
     pub fn tau(&self, seconds_since_launch: f64) -> f64 {

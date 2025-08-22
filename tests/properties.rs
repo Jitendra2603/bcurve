@@ -40,8 +40,6 @@ proptest! {
             bin_step_bps: step_bps,
             variable_fee_control: varc,
             max_fee_rate: cap,
-            fee_offset: 0.0,
-            fee_scale: 1.0,
         };
         let t1 = f.total_fee_rate(va1);
         let t2 = f.total_fee_rate(va2);
