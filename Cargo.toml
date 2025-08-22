@@ -2,7 +2,7 @@
 name = "bcurve"
 version = "0.1.0"
 edition = "2021"
-description = "DLMM bonding-curve"
+description = "DLMM bonding curve"
 license = "MIT"
 repository = "https://github.com/jitendra2603/bcurve"
 keywords = ["AMM", "DLMM", "bonding-curve", "market-microstructure", "quant"]
