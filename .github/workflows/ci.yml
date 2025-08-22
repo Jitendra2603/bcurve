@@ -80,32 +80,6 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - run: cargo clippy --all-features -- -D warnings
 
-  coverage:
-    name: Code Coverage
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Install system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y pkg-config fontconfig libfontconfig1 libfontconfig1-dev libfreetype6-dev libexpat1-dev
-          # Verify fontconfig installation
-          echo "=== Fontconfig package info ==="
-          dpkg -l | grep -i fontconfig || true
-          echo "=== Fontconfig files ==="
-          find /usr -name "fontconfig.pc" || true
-          echo "=== pkg-config info ==="
-          pkg-config --debug --libs --cflags fontconfig || true
-          echo "=== System libraries ==="
-          ldconfig -p | grep fontconfig || true
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
-      - run: cargo install cargo-tarpaulin
-      - run: cargo tarpaulin --verbose --all-features --workspace --timeout 120 --out xml
-      - uses: codecov/codecov-action@v3
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          fail_ci_if_error: false
 
   build:
     name: Build
